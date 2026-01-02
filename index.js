@@ -1,6 +1,7 @@
 import { watchEffect, ref } from 'vue';
 import './style.css';
 import { shuffle } from 'lodash';
+import morphdom from 'morphdom';
 
 const SIZE = 60;
 
@@ -11,27 +12,29 @@ const colors = ref([
 ]);
 
 watchEffect(() => {
-  const container = document.querySelector('#colors');
+  const existingContainer = document.querySelector('#colors');
 
-  if (colors.value.length === 0) {
-    container.innerHTML = '';
-    return;
-  }
+  const container = document.createElement('div');
+  container.id = 'colors';
 
-  colors.value.forEach((c, i) => {
-    const color = `rgb(${c.r}, ${c.g}, ${c.b})`;
-    let node = container.querySelector(`.color[id='${color}']`);
-    if (!node) {
-      node = document.createElement('div');
+  colors.value
+    .map((c, i) => {
+      const color = `rgb(${c.r}, ${c.g}, ${c.b})`;
+      const node = document.createElement('div');
       node.classList.add('color');
-      node.id = `rgb(${c.r}, ${c.g}, ${c.b})`;
-      node.style.backgroundColor = node.id;
+      node.id = color;
+      node.style.backgroundColor = color;
       node.style.borderColor = `rgb(${c.r * 0.8}, ${c.g * 0.8}, ${c.b * 0.8})`;
-      container.appendChild(node);
-    }
+      node.style.transform = `translateX(${SIZE * i}px)`;
 
-    node.style.transform = `translateX(${SIZE * i}px)`;
-  });
+      return node;
+    })
+    .sort((node1, node2) => (node1.id > node2.id ? 1 : -1))
+    .forEach((node) => {
+      container.appendChild(node);
+    });
+
+  morphdom(existingContainer, container);
 });
 
 document.querySelector('button#add').addEventListener('click', () => {
